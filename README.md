@@ -1,2 +1,2 @@
 # ho-java
-accept memcache protocol data save it to kafka
+accept memcache protocol data save it to kafka use netty
