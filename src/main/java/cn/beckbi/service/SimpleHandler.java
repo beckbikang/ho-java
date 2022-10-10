@@ -26,7 +26,7 @@ public class SimpleHandler  extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
         ByteBuf in = (ByteBuf) msg;
-        log.info("haahaha:"+in.toString(CharsetUtil.UTF_8));
+        log.info("Client->Server:" + ctx.channel().remoteAddress()+in.toString(CharsetUtil.UTF_8));
     }
 
     @Override

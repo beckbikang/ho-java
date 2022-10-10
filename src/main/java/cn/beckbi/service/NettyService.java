@@ -1,6 +1,7 @@
 package cn.beckbi.service;
 
 
+import io.netty.handler.codec.memcache.binary.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -49,7 +50,10 @@ public class NettyService {
                 .childHandler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     protected void initChannel(SocketChannel socketChannel) throws Exception {
-                        socketChannel.pipeline().addLast(simpleHandler);
+                        socketChannel.pipeline().addLast("codec", new BinaryMemcacheServerCodec());
+                        socketChannel.pipeline().addLast("aggregator",
+                                new BinaryMemcacheObjectAggregator(Integer.MAX_VALUE));
+                        socketChannel.pipeline().addLast("info",simpleHandler);
                     }
                 })
                 .localAddress(new InetSocketAddress(port))
