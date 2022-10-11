@@ -96,6 +96,13 @@
                 <version>${netty-all.version}</version>
             </dependency>
 
+            <!-- https://mvnrepository.com/artifact/io.netty/netty-codec-memcache -->
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-codec-memcache</artifactId>
+                <version>${netty-all.version}</version>
+            </dependency>
+
 
         </dependencies>
     </dependencyManagement>
