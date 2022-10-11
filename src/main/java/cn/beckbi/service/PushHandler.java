@@ -50,6 +50,9 @@ public class PushHandler extends ChannelInboundHandlerAdapter {
     private void dealWithMessage(ChannelHandlerContext ctx, DefaultFullBinaryMemcacheRequest request) throws UnsupportedEncodingException {
 
         //多线程写入kafka
+        String key = request.key().toString(CharsetUtil.UTF_8);
+        String content = request.content().toString(CharsetUtil.UTF_8);
+        
 
         //写入成功
         DefaultFullBinaryMemcacheResponse response =
