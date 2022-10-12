@@ -1,5 +1,6 @@
 package cn.beckbi.service;
 
+
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
@@ -8,9 +9,11 @@ import io.netty.handler.codec.memcache.binary.*;
 import io.netty.util.CharsetUtil;
 import io.netty.util.ReferenceCountUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.UnsupportedEncodingException;
+import java.util.concurrent.ThreadPoolExecutor;
 
 /**
  * @program: ho-java
@@ -21,6 +24,9 @@ import java.io.UnsupportedEncodingException;
 @Slf4j
 @Component
 public class PushHandler extends ChannelInboundHandlerAdapter {
+
+    @Autowired
+    ThreadPoolExecutor threadPoolExecutor;
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
@@ -49,21 +55,34 @@ public class PushHandler extends ChannelInboundHandlerAdapter {
     //处理消息
     private void dealWithMessage(ChannelHandlerContext ctx, DefaultFullBinaryMemcacheRequest request) throws UnsupportedEncodingException {
 
-        //多线程写入kafka
-        String key = request.key().toString(CharsetUtil.UTF_8);
-        String content = request.content().toString(CharsetUtil.UTF_8);
-        
+        threadPoolExecutor.submit(()->{
+            //多线程写入kafka
+            String key = request.key().toString(CharsetUtil.UTF_8);
+            String content = request.content().toString(CharsetUtil.UTF_8);
 
-        //写入成功
-        DefaultFullBinaryMemcacheResponse response =
-                new DefaultFullBinaryMemcacheResponse(null, null,
-                        Unpooled.wrappedBuffer("".getBytes("US-ASCII")));
-        response.setStatus(BinaryMemcacheResponseStatus.SUCCESS);
-        response.setOpaque(request.opaque());
-        response.setOpcode(request.opcode());
-        response.setCas(0);
-        response.setTotalBodyLength(0);
-        ctx.writeAndFlush(response);
+
+            //todo write kafka
+
+
+            ByteBuf byteBuf = null;
+            try {
+                byteBuf = Unpooled.wrappedBuffer("".getBytes("US-ASCII"));
+            }catch (UnsupportedEncodingException ex) {
+                log.error("UnsupportedEncodingException", ex);
+            }
+
+            //写入成功
+            assert byteBuf != null;
+            DefaultFullBinaryMemcacheResponse response =
+                    new DefaultFullBinaryMemcacheResponse(null, null, byteBuf);
+            response.setStatus(BinaryMemcacheResponseStatus.SUCCESS);
+            response.setOpaque(request.opaque());
+            response.setOpcode(request.opcode());
+            response.setCas(0);
+            response.setTotalBodyLength(0);
+            ctx.writeAndFlush(response);
+
+        });
     }
 
     @Override
