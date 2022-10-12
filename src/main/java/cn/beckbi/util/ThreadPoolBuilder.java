@@ -31,7 +31,7 @@ public class ThreadPoolBuilder {
         if (second <= 0) {
             second = DEFAULT_SECOND;
         }
-        return new SimpleThreadPoolExecutor(1, 1,
+        return new SimpleThreadPoolExecutor(corePoolSize, maxPoolSize,
                 second, TimeUnit.SECONDS,
                 new ArrayBlockingQueue<>(queueLen),
                 getThreadFactoryBuilder().setNameFormat(name+"-%d").build(),
