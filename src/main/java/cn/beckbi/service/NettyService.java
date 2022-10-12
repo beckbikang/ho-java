@@ -35,6 +35,9 @@ public class NettyService {
     @Autowired
     private SimpleHandler simpleHandler;
 
+    @Autowired
+    private PushHandler pushHandler;
+
     private EventLoopGroup bossGroup = new NioEventLoopGroup();
     private EventLoopGroup workerGroup = new NioEventLoopGroup();
 
@@ -53,6 +56,7 @@ public class NettyService {
                         socketChannel.pipeline().addLast("codec", new BinaryMemcacheServerCodec());
                         socketChannel.pipeline().addLast("aggregator",
                                 new BinaryMemcacheObjectAggregator(Integer.MAX_VALUE));
+                        socketChannel.pipeline().addLast("messageHandler",pushHandler);
                         socketChannel.pipeline().addLast("info",simpleHandler);
                     }
                 })
