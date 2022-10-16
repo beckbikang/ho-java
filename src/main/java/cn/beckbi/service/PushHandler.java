@@ -3,14 +3,19 @@ package cn.beckbi.service;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.memcache.binary.*;
 import io.netty.util.CharsetUtil;
 import io.netty.util.ReferenceCountUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
+
 
 import java.io.UnsupportedEncodingException;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -23,36 +28,60 @@ import java.util.concurrent.ThreadPoolExecutor;
  */
 @Slf4j
 @Component
-public class PushHandler extends ChannelInboundHandlerAdapter {
+@ChannelHandler.Sharable
+public class PushHandler  extends SimpleChannelInboundHandler<DefaultFullBinaryMemcacheRequest> {
+
+    @Autowired
+    @Qualifier("testKafkaTemplate")
+    private KafkaTemplate<String, String> kafkaTemplate;
+
+    @Value("${kafka.test.topic}")
+    private String topic1;
+
 
     @Autowired
     ThreadPoolExecutor threadPoolExecutor;
 
     @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) {
+    public void channelRead0(ChannelHandlerContext ctx, DefaultFullBinaryMemcacheRequest msg) {
 
-
-        if (msg instanceof DefaultFullBinaryMemcacheRequest) {
-
-            try {
-                DefaultFullBinaryMemcacheRequest request = (DefaultFullBinaryMemcacheRequest) msg;
-                switch (request.opcode()) {
-                    case BinaryMemcacheOpcodes.SET:
-                        this.dealWithMessage(ctx, request);
-                        break;
-                    default:
-                        ctx.close();
-                }
-            } catch (Exception e) {
-                log.error(e.getMessage(), e);
-                ctx.close();
-            } finally {
-                ReferenceCountUtil.release(msg);
+        log.info("msg={}", msg);
+        try {
+            log.info("opcode={}", msg.opcode());
+            switch (msg.opcode()) {
+                case BinaryMemcacheOpcodes.SET:
+                    this.dealWithMessage(ctx, msg);
+                    break;
+                default:
+                    ctx.close();
             }
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            ctx.close();
+        } finally {
+            ReferenceCountUtil.release(msg);
+        }
+
+    }
+
+    @Override
+    public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
+        ctx.flush();
+    }
+
+
+    private void writeToKafka(String key, String content) {
+        if (key.equals(topic1)) {
+            kafkaTemplate.send(topic1, content);
         }
     }
 
-    //处理消息
+    /**
+     * 处理消息
+     * @param ctx
+     * @param request
+     * @throws UnsupportedEncodingException
+     */
     private void dealWithMessage(ChannelHandlerContext ctx, DefaultFullBinaryMemcacheRequest request) throws UnsupportedEncodingException {
 
         threadPoolExecutor.submit(()->{
@@ -60,10 +89,9 @@ public class PushHandler extends ChannelInboundHandlerAdapter {
             String key = request.key().toString(CharsetUtil.UTF_8);
             String content = request.content().toString(CharsetUtil.UTF_8);
 
+            log.info("key={},content={}", key, content);
 
-            //todo write kafka
-
-
+            this.writeToKafka(key, content);
             ByteBuf byteBuf = null;
             try {
                 byteBuf = Unpooled.wrappedBuffer("".getBytes("US-ASCII"));
@@ -83,11 +111,6 @@ public class PushHandler extends ChannelInboundHandlerAdapter {
             ctx.writeAndFlush(response);
 
         });
-    }
-
-    @Override
-    public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
-        log.info("channelReadComplete");
     }
 
     @Override

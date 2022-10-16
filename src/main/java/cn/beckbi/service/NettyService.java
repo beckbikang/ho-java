@@ -32,8 +32,6 @@ import java.net.InetSocketAddress;
 @Slf4j
 public class NettyService {
 
-    @Autowired
-    private SimpleHandler simpleHandler;
 
     @Autowired
     private PushHandler pushHandler;
@@ -53,11 +51,9 @@ public class NettyService {
                 .childHandler(new ChannelInitializer<SocketChannel>() {
                     @Override
                     protected void initChannel(SocketChannel socketChannel) throws Exception {
-                        socketChannel.pipeline().addLast("codec", new BinaryMemcacheServerCodec());
-                        socketChannel.pipeline().addLast("aggregator",
-                                new BinaryMemcacheObjectAggregator(Integer.MAX_VALUE));
-                        socketChannel.pipeline().addLast("messageHandler",pushHandler);
-                        socketChannel.pipeline().addLast("info",simpleHandler);
+                        socketChannel.pipeline().addLast("codec",new BinaryMemcacheServerCodec())
+                                //.addLast("aggregator", new BinaryMemcacheObjectAggregator(Integer.MAX_VALUE))
+                                .addLast("serverHandler", pushHandler);
                     }
                 })
                 .localAddress(new InetSocketAddress(port))
