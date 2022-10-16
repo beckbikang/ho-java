@@ -3,8 +3,9 @@ package cn.beckbi.service;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.memcache.binary.*;
 import io.netty.util.CharsetUtil;
 import io.netty.util.ReferenceCountUtil;
@@ -14,7 +15,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
-import org.springframework.validation.annotation.Validated;
+
 
 import java.io.UnsupportedEncodingException;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -27,7 +28,8 @@ import java.util.concurrent.ThreadPoolExecutor;
  */
 @Slf4j
 @Component
-public class PushHandler extends ChannelInboundHandlerAdapter {
+@ChannelHandler.Sharable
+public class PushHandler  extends SimpleChannelInboundHandler<DefaultFullBinaryMemcacheRequest> {
 
     @Autowired
     @Qualifier("testKafkaTemplate")
@@ -41,30 +43,30 @@ public class PushHandler extends ChannelInboundHandlerAdapter {
     ThreadPoolExecutor threadPoolExecutor;
 
     @Override
-    public void channelRead(ChannelHandlerContext ctx, Object msg) {
-
+    public void channelRead0(ChannelHandlerContext ctx, DefaultFullBinaryMemcacheRequest msg) {
 
         log.info("msg={}", msg);
-
-        if (msg instanceof DefaultFullBinaryMemcacheRequest) {
-
-            try {
-                DefaultFullBinaryMemcacheRequest request = (DefaultFullBinaryMemcacheRequest) msg;
-                log.info("opcode={}", request.opcode());
-                switch (request.opcode()) {
-                    case BinaryMemcacheOpcodes.SET:
-                        this.dealWithMessage(ctx, request);
-                        break;
-                    default:
-                        ctx.close();
-                }
-            } catch (Exception e) {
-                log.error(e.getMessage(), e);
-                ctx.close();
-            } finally {
-                ReferenceCountUtil.release(msg);
+        try {
+            log.info("opcode={}", msg.opcode());
+            switch (msg.opcode()) {
+                case BinaryMemcacheOpcodes.SET:
+                    this.dealWithMessage(ctx, msg);
+                    break;
+                default:
+                    ctx.close();
             }
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+            ctx.close();
+        } finally {
+            ReferenceCountUtil.release(msg);
         }
+
+    }
+
+    @Override
+    public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
+        ctx.flush();
     }
 
 
@@ -109,11 +111,6 @@ public class PushHandler extends ChannelInboundHandlerAdapter {
             ctx.writeAndFlush(response);
 
         });
-    }
-
-    @Override
-    public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
-        log.info("channelReadComplete");
     }
 
     @Override
