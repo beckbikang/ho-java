@@ -10,7 +10,11 @@ import io.netty.util.CharsetUtil;
 import io.netty.util.ReferenceCountUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Component;
+import org.springframework.validation.annotation.Validated;
 
 import java.io.UnsupportedEncodingException;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -26,16 +30,27 @@ import java.util.concurrent.ThreadPoolExecutor;
 public class PushHandler extends ChannelInboundHandlerAdapter {
 
     @Autowired
+    @Qualifier("testKafkaTemplate")
+    private KafkaTemplate<String, String> kafkaTemplate;
+
+    @Value("${kafka.test.topic}")
+    private String topic1;
+
+
+    @Autowired
     ThreadPoolExecutor threadPoolExecutor;
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) {
 
 
+        log.info("msg={}", msg);
+
         if (msg instanceof DefaultFullBinaryMemcacheRequest) {
 
             try {
                 DefaultFullBinaryMemcacheRequest request = (DefaultFullBinaryMemcacheRequest) msg;
+                log.info("opcode={}", request.opcode());
                 switch (request.opcode()) {
                     case BinaryMemcacheOpcodes.SET:
                         this.dealWithMessage(ctx, request);
@@ -52,7 +67,19 @@ public class PushHandler extends ChannelInboundHandlerAdapter {
         }
     }
 
-    //处理消息
+
+    private void writeToKafka(String key, String content) {
+        if (key.equals(topic1)) {
+            kafkaTemplate.send(topic1, content);
+        }
+    }
+
+    /**
+     * 处理消息
+     * @param ctx
+     * @param request
+     * @throws UnsupportedEncodingException
+     */
     private void dealWithMessage(ChannelHandlerContext ctx, DefaultFullBinaryMemcacheRequest request) throws UnsupportedEncodingException {
 
         threadPoolExecutor.submit(()->{
@@ -60,10 +87,9 @@ public class PushHandler extends ChannelInboundHandlerAdapter {
             String key = request.key().toString(CharsetUtil.UTF_8);
             String content = request.content().toString(CharsetUtil.UTF_8);
 
+            log.info("key={},content={}", key, content);
 
-            //todo write kafka
-
-
+            this.writeToKafka(key, content);
             ByteBuf byteBuf = null;
             try {
                 byteBuf = Unpooled.wrappedBuffer("".getBytes("US-ASCII"));
