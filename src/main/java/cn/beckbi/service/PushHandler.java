@@ -1,7 +1,9 @@
 package cn.beckbi.service;
 
 
+import cn.beckbi.messages.MemcacheSetMessage;
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
@@ -18,6 +20,9 @@ import org.springframework.stereotype.Component;
 
 
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.concurrent.ThreadPoolExecutor;
 
 /**
@@ -29,7 +34,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 @Slf4j
 @Component
 @ChannelHandler.Sharable
-public class PushHandler  extends SimpleChannelInboundHandler<DefaultFullBinaryMemcacheRequest> {
+public class PushHandler  extends SimpleChannelInboundHandler<MemcacheSetMessage> {
 
     @Autowired
     @Qualifier("testKafkaTemplate")
@@ -43,18 +48,11 @@ public class PushHandler  extends SimpleChannelInboundHandler<DefaultFullBinaryM
     ThreadPoolExecutor threadPoolExecutor;
 
     @Override
-    public void channelRead0(ChannelHandlerContext ctx, DefaultFullBinaryMemcacheRequest msg) {
+    public void channelRead0(ChannelHandlerContext ctx, MemcacheSetMessage msg) {
 
         log.info("msg={}", msg);
         try {
-            log.info("opcode={}", msg.opcode());
-            switch (msg.opcode()) {
-                case BinaryMemcacheOpcodes.SET:
-                    this.dealWithMessage(ctx, msg);
-                    break;
-                default:
-                    ctx.close();
-            }
+            this.dealWithMessage(ctx, msg);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             ctx.close();
@@ -82,33 +80,22 @@ public class PushHandler  extends SimpleChannelInboundHandler<DefaultFullBinaryM
      * @param request
      * @throws UnsupportedEncodingException
      */
-    private void dealWithMessage(ChannelHandlerContext ctx, DefaultFullBinaryMemcacheRequest request) throws UnsupportedEncodingException {
+    private void dealWithMessage(ChannelHandlerContext ctx, MemcacheSetMessage request) throws UnsupportedEncodingException {
 
         threadPoolExecutor.submit(()->{
             //多线程写入kafka
-            String key = request.key().toString(CharsetUtil.UTF_8);
-            String content = request.content().toString(CharsetUtil.UTF_8);
+            String key = request.getKey();
+            String content = new String(request.getData(), StandardCharsets.UTF_8);
 
-            log.info("key={},content={}", key, content);
+            log.info("key={},content={}",key, content);
 
             this.writeToKafka(key, content);
-            ByteBuf byteBuf = null;
-            try {
-                byteBuf = Unpooled.wrappedBuffer("".getBytes("US-ASCII"));
-            }catch (UnsupportedEncodingException ex) {
-                log.error("UnsupportedEncodingException", ex);
-            }
 
             //写入成功
-            assert byteBuf != null;
-            DefaultFullBinaryMemcacheResponse response =
-                    new DefaultFullBinaryMemcacheResponse(null, null, byteBuf);
-            response.setStatus(BinaryMemcacheResponseStatus.SUCCESS);
-            response.setOpaque(request.opaque());
-            response.setOpcode(request.opcode());
-            response.setCas(0);
-            response.setTotalBodyLength(0);
-            ctx.writeAndFlush(response);
+            ByteBufAllocator alloc = ctx.alloc();
+            ByteBuf buffer = alloc.buffer();
+            buffer.writeBytes("STORED\r\n".getBytes());
+            ctx.writeAndFlush(buffer);
 
         });
     }
