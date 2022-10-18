@@ -1,8 +1,10 @@
 # ho-java overview
 accept memcache protocol data save it to kafka use netty
 
+just use set command,write to kafka easily
 
 # architecture
+
 <img width="611" alt="image" src="https://user-images.githubusercontent.com/7270440/196463451-7d158eeb-c49c-4a88-8406-efe43b533c51.png">
 
 
