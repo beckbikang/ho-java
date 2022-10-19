@@ -10,7 +10,8 @@ just use set command,write to kafka easily
 
 # the feature
 1. ✅write data to kafka by topic 
-2. registe server to consul
+2. ✅registe server to consul
+3. add prometheus monitor application
 
 
 
@@ -40,4 +41,23 @@ java server show this
 other kafka client show this
 
 <img width="556" alt="image" src="https://user-images.githubusercontent.com/7270440/196459887-df3a6fad-ef77-45b2-8c8f-6c78a6427ef1.png">
+
+# resgiste on consul
+
+## 1 run consul
+
+consul agent -dev -ui=true -client 0.0.0.0 &
+
+http://127.0.0.1:8500/ui/dc1/services
+
+## 2 add  config
+
+1. add spring-cloud library
+2. add config
+```
+spring.cloud.consul.host=localhost
+spring.cloud.consul.port=8500
+spring.cloud.consul.discovery.service-name=ho-java-producer
+```
+
 
