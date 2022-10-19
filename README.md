@@ -10,7 +10,8 @@ just use set command,write to kafka easily
 
 # the feature
 1. ✅write data to kafka by topic 
-2. registe server to consul
+2. ✅registe server to consul
+3. add prometheus monitor application
 
 
 
