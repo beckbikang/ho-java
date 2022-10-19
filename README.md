@@ -7,13 +7,14 @@ just use set command,write to kafka easily
 
 <img width="611" alt="image" src="https://user-images.githubusercontent.com/7270440/196463451-7d158eeb-c49c-4a88-8406-efe43b533c51.png">
 
-<img width="951" alt="image" src="https://user-images.githubusercontent.com/7270440/196719387-f2a69582-4a0c-4985-8a18-6f6c4be7795a.png">
-
 
 # the feature
 1. ✅write data to kafka by topic 
 2. ✅registe server to consul
 3. add prometheus monitor application
+
+
+<img width="951" alt="image" src="https://user-images.githubusercontent.com/7270440/196719387-f2a69582-4a0c-4985-8a18-6f6c4be7795a.png">
 
 
 
