@@ -14,7 +14,6 @@ just use set command,write to kafka easily
 3. add prometheus monitor application
 
 
-<img width="951" alt="image" src="https://user-images.githubusercontent.com/7270440/196719387-f2a69582-4a0c-4985-8a18-6f6c4be7795a.png">
 
 
 
@@ -62,5 +61,7 @@ spring.cloud.consul.host=localhost
 spring.cloud.consul.port=8500
 spring.cloud.consul.discovery.service-name=ho-java-producer
 ```
+
+<img width="951" alt="image" src="https://user-images.githubusercontent.com/7270440/196719387-f2a69582-4a0c-4985-8a18-6f6c4be7795a.png">
 
 
