@@ -51,6 +51,17 @@ public class KafkaConfig {
     @Value("${kafka.test.producer.valueSerializer}")
     private String produceValueSerializer;
 
+    @Value("${kafka.test.properties.jaas.enabled:false}")
+    private boolean jaasEnabled;
+
+    @Value("${kafka.test.properties.security.protocol:}")
+    private String securityProtocol;
+
+    @Value("${kafka.test.properties.sasl.mechanism:}")
+    private String saslMechanism;
+
+    @Value("${kafka.test.properties.sasl.jaas.config:}")
+    private String jaasConfig;
 
 
     @Bean("producerFactory")
@@ -65,6 +76,11 @@ public class KafkaConfig {
         producerMap.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, produceBootstrapServers);
         producerMap.put(ProducerConfig.RETRIES_CONFIG, produceRetries);
         producerMap.put(ProducerConfig.ACKS_CONFIG, produceAck);
+        if (jaasEnabled) {
+            producerMap.put(CommonClientConfigs.SECURITY_PROTOCOL_CONFIG, securityProtocol);
+            producerMap.put(SaslConfigs.SASL_MECHANISM, saslMechanism);
+            producerMap.put(SaslConfigs.SASL_JAAS_CONFIG, jaasConfig);
+        }
         return new DefaultKafkaProducerFactory<>(producerMap);
     }
 
