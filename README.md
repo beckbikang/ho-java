@@ -12,7 +12,7 @@ just use set command,write to kafka easily
 1. ✅write data to kafka by topic 
 2. ✅registe server to consul
 3. add prometheus monitor application
-4. how to test netty application
+4. add unittest
 
 
 
