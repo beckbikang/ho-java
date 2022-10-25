@@ -66,3 +66,27 @@ spring.cloud.consul.discovery.service-name=ho-java-producer
 <img width="951" alt="image" src="https://user-images.githubusercontent.com/7270440/196719387-f2a69582-4a0c-4985-8a18-6f6c4be7795a.png">
 
 
+# use prometheus
+
+http://127.0.0.1:21314/actuator/prometheus
+
+
+## run promethus
+              
+```
+global:
+  scrape_interval:     10s
+  evaluation_interval: 10s
+scrape_configs:
+  - job_name: 'spring'
+    metrics_path: '/actuator/prometheus'
+    static_configs:
+      - targets: ['127.0.0.1:21314']
+```
+docker run  -d  -p 9090:9090  -v /tmp/px.yml:/etc/prometheus/prometheus.yml prom/prometheus
+
+## run grafana
+
+docker run -d -p 3000:3000 --name=grafana -v /tmp/grafana:/var/lib/grafana  grafana/grafana
+
+http://127.0.0.1:3000/?orgId=1 访问
